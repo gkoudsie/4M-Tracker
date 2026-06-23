@@ -1,0 +1,12 @@
+{
+  "name": "4m-tracker",
+  "version": "1.0.0",
+  "description": "4M Tracker Dashboard for AUH1, DXB5, DXB3, DXB6",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "4.18.2"
+  }
+}
