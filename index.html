@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4M Tracker Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #16213e, #0f3460);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #e94560;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .header .subtitle {
+            color: #a0a0a0;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 20px 40px 0;
+            background: #16213e;
+        }
+
+        .tab {
+            padding: 12px 28px;
+            background: #0f3460;
+            border: 1px solid #1a4080;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #a0a0a0;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: #1a4080;
+            color: #fff;
+        }
+
+        .tab.active {
+            background: #1a1a2e;
+            color: #e94560;
+            border-color: #e94560;
+            border-bottom: 2px solid #1a1a2e;
+            margin-bottom: -2px;
+        }
+
+        .dashboard {
+            padding: 30px 40px;
+        }
+
+        .fc-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .fc-header h2 {
+            font-size: 32px;
+            color: #e94560;
+        }
+
+        .fc-header .fc-stats {
+            display: flex;
+            gap: 15px;
+        }
+
+        .stat-badge {
+            background: #0f3460;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid #1a4080;
+        }
+
+        .stat-badge span {
+            color: #e94560;
+            font-weight: 700;
+        }
+
+        .departments {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dept-card {
+            background: #16213e;
+            border-radius: 12px;
+            border: 1px solid #1a4080;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .dept-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .dept-card-header {
+            background: #0f3460;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1a4080;
+        }
+
+        .dept-card-header h3 {
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .dept-card-header .volume-info {
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+
+        .dept-card-header .volume-info span {
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+
+        .dept-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dept-table th {
+            background: #0d2847;
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #7a8fa6;
+            border-bottom: 1px solid #1a4080;
+        }
+
+        .dept-table td {
+            padding: 9px 14px;
+            font-size: 13px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .dept-table tr:hover {
+            background: #1a3a5c;
+        }
+
+        .dept-table .item-name {
+            color: #d0d0d0;
+            max-width: 180px;
+        }
+
+        .dept-table .num {
+            text-align: center;
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        .delta-positive {
+            color: #4ecdc4;
+        }
+
+        .delta-negative {
+            color: #e94560;
+            font-weight: 700;
+        }
+
+        .delta-zero {
+            color: #666;
+        }
+
+        .delta-note {
+            color: #f9a825;
+            font-size: 11px;
+        }
+
+        /* Site Requirements Section */
+        .site-requirements {
+            margin-top: 30px;
+            background: #16213e;
+            border-radius: 12px;
+            border: 1px solid #e94560;
+            overflow: hidden;
+        }
+
+        .site-requirements-header {
+            background: linear-gradient(135deg, #e94560, #c23050);
+            padding: 14px 20px;
+        }
+
+        .site-requirements-header h3 {
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .site-req-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .site-req-table th {
+            background: #0d2847;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #7a8fa6;
+        }
+
+        .site-req-table td {
+            padding: 10px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .site-req-table tr:hover {
+            background: #1a3a5c;
+        }
+
+        /* Summary bar */
+        .summary-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .summary-card {
+            background: #16213e;
+            border: 1px solid #1a4080;
+            border-radius: 10px;
+            padding: 18px 24px;
+            min-width: 160px;
+            text-align: center;
+        }
+
+        .summary-card .label {
+            font-size: 12px;
+            color: #7a8fa6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .summary-card .value {
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .summary-card .value.red { color: #e94560; }
+        .summary-card .value.green { color: #4ecdc4; }
+        .summary-card .value.yellow { color: #f9a825; }
+        .summary-card .value.blue { color: #5dade2; }
+
+        .notes-section {
+            margin-top: 15px;
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 14px 20px;
+            border-left: 4px solid #f9a825;
+        }
+
+        .notes-section h4 {
+            color: #f9a825;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .notes-section p {
+            font-size: 12px;
+            color: #a0a0a0;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .header { padding: 15px 20px; }
+            .tabs { padding: 15px 20px 0; }
+            .dashboard { padding: 20px; }
+            .departments { grid-template-columns: 1fr; }
+            .tab { padding: 10px 16px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>4M Tracker Dashboard</h1>
+            <div class="subtitle">Machine & Material Tracking — Peak Week 46</div>
+        </div>
+        <div style="color: #7a8fa6; font-size: 13px;">Last Updated: WK46</div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="showFC('auh1')">AUH1</div>
+        <div class="tab" onclick="showFC('dxb5')">DXB5</div>
+        <div class="tab" onclick="showFC('dxb3')">DXB3</div>
+        <div class="tab" onclick="showFC('dxb6')">DXB6</div>
+    </div>
+
+    <div class="dashboard" id="dashboard"></div>
+
+    <script>
+
+const data = {
+    auh1: {
+        name: "AUH1",
+        volumes: {
+            inbound: { wk46_ib: "900,000", daily_max: "150,000", wk46_tsi: "250,000", tsi_daily_max: "50,000" },
+            outbound: { wk46_ob: "—", wk46_tso: "—", wk46_vret: "—" },
+            sc: { wk46_sc: "—", tso_scanners: "—" },
+            cret: { wk46_cret: "—", peakiest_day: "—" }
+        },
+        departments: {
+            Inbound: [
+                { item: "PM560 scanners", current: 134, required: 180, delta: -46 },
+                { item: "Non sort cart", current: 67, required: 60, delta: 7 },
+                { item: "Black/grey stow cart", current: 84, required: 95, delta: 11 },
+                { item: "Double decker grey cart", current: 0, required: 0, delta: 0 },
+                { item: "Stow banana cart (yellow/black)", current: 85, required: 85, delta: 0 },
+                { item: "Black receive 3 cart shelf", current: 55, required: 55, delta: 0 },
+                { item: "Laptops", current: 6, required: 5, delta: -1 },
+                { item: "Cowcart", current: 9, required: 21, delta: 12 },
+                { item: "HPJ", current: 14, required: 30, delta: 16 }
+            ],
+            Outbound: [
+                { item: "PM560 scanners", current: 220, required: 337, delta: -117 },
+                { item: "Small rebin cart", current: 135, required: 154, delta: -19 },
+                { item: "Large rebin cart", current: 65, required: 76, delta: -11 },
+                { item: "Non sort cart", current: 200, required: 175, delta: 25 },
+                { item: "Wrangling cart", current: 330, required: 330, delta: 0 },
+                { item: "Pick cart", current: 247, required: 265, delta: -18 },
+                { item: "Laptops", current: 19, required: 25, delta: -6 },
+                { item: "Cow carts with laptop/UPS", current: 15, required: 20, delta: -5 }
+            ],
+            SC: [
+                { item: "PM560 scanners", current: 35, required: 50, delta: 15 },
+                { item: "Pallets per day", current: 250, required: 600, delta: 350 },
+                { item: "PM85 GTDR", current: 4, required: 4, delta: 0 },
+                { item: "PM85 for Pulsar", current: 12, required: 12, delta: 0 },
+                { item: "Pulsar Carts", current: 22, required: 22, delta: 0 },
+                { item: "Shuttle Box", current: 0, required: 1500, delta: 1500 },
+                { item: "Laptops", current: 3, required: 4, delta: 1 }
+            ],
+            CRET: [
+                { item: "PM560/Honey scanners", current: 34, required: 45, delta: 11 },
+                { item: "Non sort cart", current: 80, required: 110, delta: 30 },
+                { item: "Laptops", current: 25, required: 32, delta: 7 },
+                { item: "PM85 GTDR", current: 1, required: 1, delta: 0 },
+                { item: "USB scanner", current: 22, required: 32, delta: 10 },
+                { item: "Laptop charger", current: 0, required: 10, delta: 10 }
+            ],
+            ICQA: [
+                { item: "Honeywell scanner", current: 5, required: 5, delta: 0 },
+                { item: "ICQA cart", current: 42, required: 52, delta: 10 },
+                { item: "Laptops", current: 6, required: 6, delta: 0 },
+                { item: "Battery charging Dock", current: 2, required: 3, delta: 1 },
+                { item: "PM560 scanners", current: 45, required: 55, delta: 10 }
+            ]
+        },
+        siteRequirements: [
+            { item: "PM560 scanners", current: 468, required: 667, delta: -199 },
+            { item: "NS carts", current: 347, required: 345, delta: 2 },
+            { item: "Black/grey stow cart", current: 84, required: 95, delta: 11 },
+            { item: "Double decker grey cart", current: 0, required: 0, delta: 0 },
+            { item: "Stow banana cart (yellow/black)", current: 85, required: 85, delta: 0 },
+            { item: "Black receive 3 cart shelf", current: 55, required: 55, delta: 0 },
+            { item: "Laptop", current: 59, required: 72, delta: -13 },
+            { item: "Cowcarts", current: 24, required: 41, delta: -17 },
+            { item: "HPJ", current: 14, required: 30, delta: -16 },
+            { item: "Small rebin cart", current: 135, required: 154, delta: -19 },
+            { item: "Large rebin cart", current: 65, required: 76, delta: -11 },
+            { item: "Wrangling cart", current: 330, required: 330, delta: 0 },
+            { item: "Pick cart", current: 247, required: 265, delta: -18 },
+            { item: "Pallets per day", current: 35, required: 50, delta: -15 },
+            { item: "PM85 GTDR", current: 4, required: 4, delta: 0 },
+            { item: "PM85 for Pulsar", current: 12, required: 12, delta: 0 },
+            { item: "Pulsar Carts", current: 22, required: 22, delta: 0 },
+            { item: "Shuttle Box", current: 0, required: 1500, delta: -1500 },
+            { item: "USB scanner", current: 22, required: 32, delta: -10 },
+            { item: "Laptop charger", current: 0, required: 10, delta: -10 },
+            { item: "Honeywell scanner", current: 5, required: 5, delta: 0 },
+            { item: "ICQA cart", current: 42, required: 52, delta: -10 },
+            { item: "Battery charging Dock", current: 2, required: 3, delta: -1 }
+        ]
+    },
+    dxb5: {
+        name: "DXB5",
+        volumes: {
+            inbound: { wk46_ib: "1,530,840", wk46_tsi: "240,636" },
+            outbound: { wk46_ob: "1,556,543", daily_max_ob: "223,665", wk46_tso: "521,023", daily_max_tso: "75,620", wk46_vret: "15,598", daily_max_vret: "4,428" },
+            sc: { daily_max: "106K shipments", weekly: "620K" }
+        },
+        departments: {
+            Inbound: [
+                { item: "PM560 scanners", current: 120, required: 175, delta: null, note: "See below" },
+                { item: "Non sort cart", current: "—", required: 100, delta: null, note: "See below" },
+                { item: "Double decker grey cart", current: 30, required: 0, delta: null },
+                { item: "Stow banana cart (yellow/black)", current: "114 + 45 due from DXB3", required: 214, delta: 55 },
+                { item: "Black receive 3 cart shelf", current: 245, required: 245, delta: 0 }
+            ],
+            Outbound: [
+                { item: "PM560 scanners", current: "N/A", required: 255, delta: null, note: "See below" },
+                { item: "Small rebin cart", current: 121, required: 151, delta: 30 },
+                { item: "Non sort cart", current: "176 + 25 due from DXB3", required: 109, delta: null },
+                { item: "Wrangling cart", current: 263, required: 183, delta: 0 },
+                { item: "Pick cart", current: 164, required: 255, delta: -91 },
+                { item: "Large rebin cart", current: 82, required: 100, delta: -18 }
+            ],
+            SC: [
+                { item: "PM57 scanners", current: 60, required: 85, delta: 25 },
+                { item: "PM85", current: 80, required: 80, delta: 0 }
+            ],
+            ICQA: [
+                { item: "PM560 scanners", current: 37, required: 75, delta: 38 },
+                { item: "ICQA cart", current: 70, required: 75, delta: 1 }
+            ]
+        },
+        sharedAssets: [
+            { item: "DXB5 total scanners", current: 500, required: 663, toOrder: 0 },
+            { item: "Non sort cart", current: "176 + 25 due from DXB3", required: 209, toOrder: 25 }
+        ],
+        notes: ["TSO, VRET, CS share assets from the shared pool."]
+    },
+    dxb3: {
+        name: "DXB3",
+        volumes: {},
+        departments: {
+            "Inbound (DUF3 & DXB3)": [
+                { item: "PM560 scanners", current: 109, required: 200, delta: -91 },
+                { item: "Non sort cart", current: 5, required: 5, delta: 0 },
+                { item: "Black/grey stow cart", current: 90, required: 90, delta: 0 },
+                { item: "Double decker grey cart", current: 0, required: 0, delta: 0 },
+                { item: "Stow banana cart (yellow/black)", current: 40, required: 50, delta: -10 },
+                { item: "Black receive 3 cart shelf", current: 70, required: 125, delta: -55 },
+                { item: "Cow Carts", current: 8, required: 8, delta: 0 }
+            ],
+            Outbound: [
+                { item: "PM560 scanners", current: 121, required: 168, delta: -47 },
+                { item: "Small rebin cart", current: 26, required: 142, delta: -116 },
+                { item: "Large rebin cart", current: 21, required: 58, delta: -37 },
+                { item: "Non sort cart", current: 40, required: 54, delta: -14 },
+                { item: "Wrangling cart", current: 111, required: 184, delta: -73 },
+                { item: "Pick cart", current: 204, required: 184, delta: 20 },
+                { item: "Stow banana cart (yellow/black)", current: 20, required: 20, delta: 0 },
+                { item: "Totes - Black", current: 8000, required: 10000, delta: -2000 },
+                { item: "Totes - HRV with LID", current: 800, required: 1200, delta: -600 },
+                { item: "Cow Carts", current: 2, required: 4, delta: -2 }
+            ],
+            SC: [
+                { item: "PM560 scanners", current: 25, required: 45, delta: -20 },
+                { item: "Pallets", current: 200, required: 200, delta: 0 },
+                { item: "Cow Carts", current: 1, required: 1, delta: 0 },
+                { item: "Laptops", current: 4, required: 6, delta: -2 }
+            ],
+            ICQA: [
+                { item: "PM560 scanners", current: 26, required: 27, delta: -1 },
+                { item: "ICQA cart", current: 6, required: 18, delta: -12 },
+                { item: "Cow Carts", current: 2, required: 2, delta: 0 }
+            ]
+        }
+    },
+    dxb6: {
+        name: "DXB6",
+        volumes: {},
+        departments: {
+            Inbound: [
+                { item: "PM85/TC57 Scanners", current: 0, required: 0, delta: 0 },
+                { item: "Zebra Wired scanner", current: 44, required: 60, delta: 16 },
+                { item: "Yubico", current: 172, required: 245, delta: 73 },
+                { item: "Electric jack pallet", current: 4, required: 4, delta: 0 }
+            ],
+            Outbound: [
+                { item: "PM85/TC57 Scanners", current: 0, required: 0, delta: 0 },
+                { item: "Slam scale - sortable", current: 12, required: 15, delta: 3 },
+                { item: "Slam scale - non sort", current: 2, required: 3, delta: 1 },
+                { item: "Tape Guns", current: 10, required: 70, delta: 60 },
+                { item: "Zebra Wired scanner", current: 70, required: 100, delta: 30 },
+                { item: "Yubico", current: 343, required: 491, delta: 148 },
+                { item: "Electric jack pallet", current: 0, required: 2, delta: 2 },
+                { item: "Slam printers", current: 30, required: 32, delta: 2 }
+            ],
+            SC: [
+                { item: "PM85/TC57 Scanners", current: 28, required: 40, delta: 12 },
+                { item: "Yubico", current: 49, required: 89, delta: 40 },
+                { item: "Electric jack pallet", current: 4, required: 5, delta: 1 },
+                { item: "Slam printers", current: 3, required: 4, delta: 1 }
+            ],
+            ICQA: [
+                { item: "PM85/TC57 Scanners", current: "—", required: "—", delta: null },
+                { item: "Zebra Wired scanner", current: 31, required: 31, delta: 0 },
+                { item: "Yubico", current: 72, required: 79, delta: 7 },
+                { item: "Electric jack pallet", current: "—", required: "—", delta: null }
+            ]
+        },
+        notes: [
+            "Asset audit is requested, procurement will be looped in to adjust contract assets accordingly.",
+            "Due to change in system access compliance — entire 3PL needs Yubico on all devices, not only scanners as before Aug."
+        ]
+    }
+};
+
+function getDeltaClass(delta) {
+    if (delta === null || delta === undefined) return 'delta-note';
+    if (delta < 0) return 'delta-negative';
+    if (delta > 0) return 'delta-positive';
+    return 'delta-zero';
+}
+
+function formatDelta(delta, note) {
+    if (note) return `<span class="delta-note">${note}</span>`;
+    if (delta === null || delta === undefined) return '<span class="delta-zero">—</span>';
+    const prefix = delta > 0 ? '+' : '';
+    return `<span class="${getDeltaClass(delta)}">${prefix}${delta}</span>`;
+}
+
+function calculateSummary(fc) {
+    let totalItems = 0;
+    let shortages = 0;
+    let surplus = 0;
+    let totalDeficit = 0;
+
+    Object.values(fc.departments).forEach(items => {
+        items.forEach(item => {
+            totalItems++;
+            if (typeof item.delta === 'number') {
+                if (item.delta < 0) {
+                    shortages++;
+                    totalDeficit += item.delta;
+                } else if (item.delta > 0) {
+                    surplus++;
+                }
+            }
+        });
+    });
+
+    return { totalItems, shortages, surplus, totalDeficit };
+}
+
+function renderFC(fcKey) {
+    const fc = data[fcKey];
+    const summary = calculateSummary(fc);
+    const dashboard = document.getElementById('dashboard');
+
+    let html = `
+        <div class="fc-header">
+            <h2>${fc.name}</h2>
+        </div>
+        <div class="summary-bar">
+            <div class="summary-card">
+                <div class="label">Total Items Tracked</div>
+                <div class="value blue">${summary.totalItems}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Items in Shortage</div>
+                <div class="value red">${summary.shortages}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Items Surplus</div>
+                <div class="value green">${summary.surplus}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Total Deficit</div>
+                <div class="value yellow">${summary.totalDeficit}</div>
+            </div>
+        </div>
+        <div class="departments">
+    `;
+
+    Object.entries(fc.departments).forEach(([deptName, items]) => {
+        html += `
+            <div class="dept-card">
+                <div class="dept-card-header">
+                    <h3>${deptName}</h3>
+                    <div class="volume-info">${items.length} items</div>
+                </div>
+                <table class="dept-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th style="text-align:center">Current</th>
+                            <th style="text-align:center">Required</th>
+                            <th style="text-align:center">Delta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        items.forEach(item => {
+            html += `
+                <tr>
+                    <td class="item-name">${item.item}</td>
+                    <td class="num">${item.current}</td>
+                    <td class="num">${item.required}</td>
+                    <td class="num">${formatDelta(item.delta, item.note)}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+    });
+
+    html += `</div>`;
+
+    // Site Requirements (AUH1 only)
+    if (fc.siteRequirements) {
+        html += `
+            <div class="site-requirements">
+                <div class="site-requirements-header">
+                    <h3>Site Requirements Summary</h3>
+                </div>
+                <table class="site-req-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th style="text-align:center">Current</th>
+                            <th style="text-align:center">Required</th>
+                            <th style="text-align:center">Delta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        fc.siteRequirements.forEach(item => {
+            html += `
+                <tr>
+                    <td class="item-name">${item.item}</td>
+                    <td class="num">${item.current}</td>
+                    <td class="num">${item.required}</td>
+                    <td class="num">${formatDelta(item.delta)}</td>
+                </tr>
+            `;
+        });
+        html += `</tbody></table></div>`;
+    }
+
+    // Shared Assets (DXB5)
+    if (fc.sharedAssets) {
+        html += `
+            <div class="site-requirements" style="margin-top: 20px;">
+                <div class="site-requirements-header" style="background: linear-gradient(135deg, #4ecdc4, #2ea89e);">
+                    <h3>Shared Assets</h3>
+                </div>
+                <table class="site-req-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th style="text-align:center">Current</th>
+                            <th style="text-align:center">Required</th>
+                            <th style="text-align:center">To Order</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        fc.sharedAssets.forEach(item => {
+            html += `
+                <tr>
+                    <td class="item-name">${item.item}</td>
+                    <td class="num">${item.current}</td>
+                    <td class="num">${item.required}</td>
+                    <td class="num"><span class="${item.toOrder > 0 ? 'delta-negative' : 'delta-zero'}">${item.toOrder}</span></td>
+                </tr>
+            `;
+        });
+        html += `</tbody></table></div>`;
+    }
+
+    // Notes
+    if (fc.notes && fc.notes.length > 0) {
+        html += `
+            <div class="notes-section">
+                <h4>Notes</h4>
+                ${fc.notes.map(n => `<p>• ${n}</p>`).join('')}
+            </div>
+        `;
+    }
+
+    dashboard.innerHTML = html;
+}
+
+function showFC(fcKey) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    renderFC(fcKey);
+}
+
+// Initial render
+renderFC('auh1');
+    </script>
+</body>
+</html>
