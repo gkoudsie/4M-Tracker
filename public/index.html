@@ -205,6 +205,37 @@
             font-weight: 500;
         }
 
+        .dept-card-header .dept-edit-btn {
+            font-size: 12px;
+            padding: 4px 12px;
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        .dept-card-header .dept-edit-btn:hover {
+            background: #4f46e5;
+        }
+
+        .dept-card-header .dept-edit-btn.editing {
+            background: #10b981;
+        }
+
+        .dept-card-header .dept-edit-btn.editing:hover {
+            background: #059669;
+        }
+
+        .dept-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .dept-table {
             width: 100%;
             border-collapse: collapse;
@@ -604,8 +635,7 @@
         </div>
         <div class="header-actions">
             <span class="save-notice" id="saveNotice">✓ Saved</span>
-            <button class="edit-toggle" style="background:#059669;" onclick="downloadReport()">📥 Download Purchase Report</button>
-            <button class="edit-toggle" id="editBtn" onclick="toggleEdit()">✏️ Edit Mode</button>
+            <button class="edit-toggle" style="background:#059669;" onclick="downloadReport()">📥 Export CSV</button>
         </div>
     </div>
 
@@ -778,7 +808,7 @@ const defaultData = {
 };
 
 // ============ STATE ============
-let editMode = false;
+let editingDepts = {};  // { "auh1|Inbound": true, ... }
 let currentFC = 'auh1';
 
 function loadData() {
@@ -897,11 +927,19 @@ function renderFC(fcKey) {
     `;
 
     Object.entries(fc.departments).forEach(([deptName, items]) => {
+        const deptKey = `${fcKey}|${deptName}`;
+        const isEditing = editingDepts[deptKey] || false;
+        const editBtnText = isEditing ? '💾 Save' : '✏️ Edit';
+        const editBtnClass = isEditing ? 'dept-edit-btn editing' : 'dept-edit-btn';
+
         html += `
             <div class="dept-card">
                 <div class="dept-card-header">
                     <h3>${deptName}</h3>
-                    <span class="badge">${items.length} items</span>
+                    <div class="dept-header-right">
+                        <span class="badge">${items.length} items</span>
+                        <button class="${editBtnClass}" onclick="toggleDeptEdit('${fcKey}', '${deptName}')">${editBtnText}</button>
+                    </div>
                 </div>
                 <table class="dept-table">
                     <thead>
@@ -916,7 +954,7 @@ function renderFC(fcKey) {
         `;
 
         items.forEach((item, idx) => {
-            if (editMode) {
+            if (isEditing) {
                 html += `
                     <tr>
                         <td class="item-name">${item.item}</td>
@@ -1138,25 +1176,19 @@ function renderNetwork() {
 }
 
 // ============ EDIT FUNCTIONS ============
-function toggleEdit() {
-    editMode = !editMode;
-    const btn = document.getElementById('editBtn');
-    if (editMode) {
-        btn.textContent = '💾 Save & Exit';
-        btn.classList.add('editing');
-    } else {
-        btn.textContent = '✏️ Edit Mode';
-        btn.classList.remove('editing');
+function toggleDeptEdit(fcKey, deptName) {
+    const deptKey = `${fcKey}|${deptName}`;
+    editingDepts[deptKey] = !editingDepts[deptKey];
+    if (!editingDepts[deptKey]) {
         saveData();
     }
-    renderFC(currentFC);
+    renderFC(fcKey);
 }
 
 function updateValue(fcKey, deptName, idx, field, value) {
     const numVal = parseInt(value);
     data[fcKey].departments[deptName][idx][field] = isNaN(numVal) ? 0 : numVal;
     saveData();
-    renderFC(fcKey);
 }
 
 function showFC(fcKey, tabEl) {
@@ -1165,37 +1197,56 @@ function showFC(fcKey, tabEl) {
     renderFC(fcKey);
 }
 
-// ============ DOWNLOAD REPORT ============
+// ============ EXPORT CSV ============
 function downloadReport() {
-    const fcKeys = ['auh1', 'dxb5', 'dxb3', 'dxb6'];
-    let csv = 'Site,Department,Item,Available,Required,Delta\n';
+    if (currentFC === 'network') {
+        // Network: export all sites combined
+        let csv = 'Site,Department,Item,Available,Required,Delta\n';
+        const fcKeys = ['auh1', 'dxb5', 'dxb3', 'dxb6'];
+        fcKeys.forEach(fcKey => {
+            const fc = data[fcKey];
+            Object.entries(fc.departments).forEach(([deptName, items]) => {
+                items.forEach(item => {
+                    const c = parseInt(item.current) || 0;
+                    const r = parseInt(item.required) || 0;
+                    const delta = c - r;
+                    csv += `"${fc.name}","${deptName}","${item.item}",${c},${r},${delta}\n`;
+                });
+            });
+        });
 
-    fcKeys.forEach(fcKey => {
-        const fc = data[fcKey];
+        csv += '\nNetwork Total\n';
+        csv += 'Item,Total Available,Total Required,Delta\n';
+        const networkItems = calculateNetworkTotal();
+        networkItems.forEach(item => {
+            const delta = item.current - item.required;
+            csv += `"${item.item}",${item.current},${item.required},${delta}\n`;
+        });
+
+        downloadCSV(csv, '4M-Tracker-Network-Total.csv');
+    } else {
+        // Single site export
+        const fc = data[currentFC];
+        let csv = `Site: ${fc.name}\n\nDepartment,Item,Available,Required,Delta\n`;
         Object.entries(fc.departments).forEach(([deptName, items]) => {
             items.forEach(item => {
                 const c = parseInt(item.current) || 0;
                 const r = parseInt(item.required) || 0;
                 const delta = c - r;
-                csv += `"${fc.name}","${deptName}","${item.item}",${c},${r},${delta}\n`;
+                csv += `"${deptName}","${item.item}",${c},${r},${delta}\n`;
             });
         });
-    });
 
-    // Add a blank line then network totals
-    csv += '\n\nNetwork Total,,,,\n';
-    csv += 'Item,Total Available,Total Required,Delta,\n';
-    const networkItems = calculateNetworkTotal();
-    networkItems.forEach(item => {
-        const delta = item.current - item.required;
-        csv += `"${item.item}",${item.current},${item.required},${delta},\n`;
-    });
+        downloadCSV(csv, `4M-Tracker-${fc.name}.csv`);
+    }
+}
 
+function downloadCSV(csv, filename) {
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '4M-Tracker-Purchase-Report.csv';
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
 }
