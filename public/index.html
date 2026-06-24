@@ -604,6 +604,7 @@
         </div>
         <div class="header-actions">
             <span class="save-notice" id="saveNotice">✓ Saved</span>
+            <button class="edit-toggle" style="background:#059669;" onclick="downloadReport()">📥 Download Purchase Report</button>
             <button class="edit-toggle" id="editBtn" onclick="toggleEdit()">✏️ Edit Mode</button>
         </div>
     </div>
@@ -798,8 +799,8 @@ let data = loadData();
 // ============ HELPERS ============
 function getDeltaClass(delta) {
     if (delta === null || delta === undefined || isNaN(delta)) return 'delta-zero';
-    if (delta > 0) return 'delta-positive';
-    if (delta < 0) return 'delta-negative';
+    if (delta < 0) return 'delta-positive';
+    if (delta > 0) return 'delta-negative';
     return 'delta-zero';
 }
 
@@ -807,10 +808,9 @@ function formatDelta(current, required) {
     const c = parseInt(current);
     const r = parseInt(required);
     if (isNaN(c) || isNaN(r)) return '<span class="delta-zero">—</span>';
-    const delta = r - c;
+    const delta = c - r;
     if (delta === 0) return '<span class="delta-zero">0</span>';
-    const prefix = delta > 0 ? '+' : '';
-    return `<span class="${getDeltaClass(delta)}">${prefix}${delta}</span>`;
+    return `<span class="${getDeltaClass(delta)}">${delta}</span>`;
 }
 
 function calculateSummary(fc) {
@@ -821,9 +821,9 @@ function calculateSummary(fc) {
             const c = parseInt(item.current);
             const r = parseInt(item.required);
             if (!isNaN(c) && !isNaN(r)) {
-                const delta = r - c;
-                if (delta > 0) { shortages++; totalDeficit += delta; }
-                else if (delta < 0) { surplus++; }
+                const delta = c - r;
+                if (delta < 0) { shortages++; totalDeficit += delta; }
+                else if (delta > 0) { surplus++; }
             }
         });
     });
@@ -852,9 +852,9 @@ function calculateNetworkTotal() {
     });
 
     return Object.values(itemMap).sort((a, b) => {
-        const deltaA = a.required - a.current;
-        const deltaB = b.required - b.current;
-        return deltaB - deltaA;
+        const deltaA = a.current - a.required;
+        const deltaB = b.current - b.required;
+        return deltaA - deltaB;
     });
 }
 
@@ -890,7 +890,7 @@ function renderFC(fcKey) {
             </div>
             <div class="summary-card">
                 <div class="label">Total Gap</div>
-                <div class="value amber">+${summary.totalDeficit}</div>
+                <div class="value amber">${summary.totalDeficit}</div>
             </div>
         </div>
         <div class="departments">
@@ -989,7 +989,7 @@ function renderNetwork() {
     });
 
     // Top 10 biggest gaps for bar chart
-    const topGaps = items.filter(i => i.required - i.current > 0).slice(0, 10);
+    const topGaps = items.filter(i => i.current - i.required < 0).slice(0, 10);
     const maxGap = topGaps.length > 0 ? topGaps[0].required : 1;
 
     // Donut segments
@@ -1000,7 +1000,7 @@ function renderNetwork() {
 
     let html = `
         <div class="fc-header">
-            <h2>🌐 Network Total (All FCs)</h2>
+            <h2>🌐 Network Total</h2>
         </div>
         <div class="summary-bar">
             <div class="summary-card">
@@ -1017,7 +1017,7 @@ function renderNetwork() {
             </div>
             <div class="summary-card">
                 <div class="label">Network Gap</div>
-                <div class="value red">+${totalGap.toLocaleString()}</div>
+                <div class="value red">${(-totalGap).toLocaleString()}</div>
             </div>
         </div>
 
@@ -1058,7 +1058,7 @@ function renderNetwork() {
     `;
 
     topGaps.forEach(item => {
-        const gap = item.required - item.current;
+        const gap = item.current - item.required;
         const availPct = item.required > 0 ? Math.min((item.current / item.required) * 100, 100) : 100;
         html += `
             <div class="bar-row">
@@ -1066,7 +1066,7 @@ function renderNetwork() {
                 <div class="bar-container">
                     <div class="bar-fill-available" style="width: ${availPct}%"></div>
                 </div>
-                <div class="bar-value shortage">+${gap}</div>
+                <div class="bar-value shortage">${gap}</div>
             </div>
         `;
     });
@@ -1163,6 +1163,41 @@ function showFC(fcKey, tabEl) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tabEl.classList.add('active');
     renderFC(fcKey);
+}
+
+// ============ DOWNLOAD REPORT ============
+function downloadReport() {
+    const fcKeys = ['auh1', 'dxb5', 'dxb3', 'dxb6'];
+    let csv = 'Site,Department,Item,Available,Required,Delta\n';
+
+    fcKeys.forEach(fcKey => {
+        const fc = data[fcKey];
+        Object.entries(fc.departments).forEach(([deptName, items]) => {
+            items.forEach(item => {
+                const c = parseInt(item.current) || 0;
+                const r = parseInt(item.required) || 0;
+                const delta = c - r;
+                csv += `"${fc.name}","${deptName}","${item.item}",${c},${r},${delta}\n`;
+            });
+        });
+    });
+
+    // Add a blank line then network totals
+    csv += '\n\nNetwork Total,,,,\n';
+    csv += 'Item,Total Available,Total Required,Delta,\n';
+    const networkItems = calculateNetworkTotal();
+    networkItems.forEach(item => {
+        const delta = item.current - item.required;
+        csv += `"${item.item}",${item.current},${item.required},${delta},\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '4M-Tracker-Purchase-Report.csv';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // ============ INITIAL RENDER ============
